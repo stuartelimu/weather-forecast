@@ -1,12 +1,83 @@
+// register service worker
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function() {
+      navigator.serviceWorker
+        .register("/serviceWorker.js")
+        .then(res => console.log("service worker registered"))
+        .catch(err => console.log("service worker not registered", err))
+    })
+}
+  
+
 const apiKey = "86b04004cb4cf5cc52ad1ef8433155c8";
+
+console.log(window.localStorage);
 
 if (navigator.geolocation) {
 
-    navigator.geolocation.getCurrentPosition(displayLocationInfo);
+    navigator.geolocation.getCurrentPosition(
+        displayLocationInfo,
+        handleLocationError,
+        { maximumAge: 1500000, timeout: 0 }
+    );
 
-} else {
-    // no can do
 }
+
+function cachedFetch(url, options) {
+    let expiry = 5 * 60 // 5 min default
+    if (typeof options === 'number') {
+        expiry = options
+        options = undefined
+    } else if (typeof options === 'object') {
+        // I hope you didn't set it to 0 seconds
+        expiry = options.seconds || expiry
+    }
+    // Use the URL as the cache key to sessionStorage
+    let cacheKey = url;
+
+    // START new cache HIT code
+    let cached = sessionStorage.getItem(cacheKey)
+    let whenCached = localStorage.getItem(cacheKey + ':ts')
+    if (cached !== null && whenCached !== null) {
+        // it was in sessionStorage! Yay!
+        // Even though 'whenCached' is a string, this operation
+        // works because the minus sign converts the
+        // string to an integer and it will work.
+        let age = (Date.now() - whenCached) / 1000
+        if (age < expiry) {
+            let response = new Response(new Blob([cached]))
+            return Promise.resolve(response);
+        } else {
+            // We need to clean up this old key
+            localStorage.removeItem(cacheKey)
+            localStorage.removeItem(cacheKey + ':ts')
+        }
+    }
+    // END new cache HIT code
+
+
+    return fetch(url, options).then(response => {
+        // let's only store in cache if the content-type is
+        // JSON or something non-binary
+        if (response.status === 200) {
+            let ct = response.headers.get('Content-Type');
+            if (ct && (ct.match(/application\/json/i) || ct.match(/text\//i))) {
+                // There is a .json() instead of .text() but
+                // we're going to store it in sessionStorage as
+                // string anyway.
+                // If we don't clone the response, it will be
+                // consumed by the time it's returned. This
+                // way we're being un-intrusive.
+                response.clone().text().then(content => {
+                    localStorage.setItem(cacheKey, content)
+                    localStorage.setItem(cacheKey+':ts', Date.now())
+                })
+            }
+        }
+        return response;
+    })
+
+} 
 
 function displayLocationInfo(position) {
     const lng = position.coords.longitude;
@@ -19,7 +90,7 @@ function displayLocationInfo(position) {
 
     const url = `http://api.openweathermap.org/data/2.5/find?lat=${lat}&lon=${lng}&cnt=7&appid=${apiKey}&units=metric`;
 
-    fetch(url)
+    cachedFetch(url)
         .then(response => response.json())
         .then(data => {
             // do something
@@ -69,6 +140,11 @@ function handleLocationError(error) {
     switch(error.code) {
         case 3:
             // ... deal with timeout
+            // timeout was hit, meaning there's nothing in the cache
+            // provide default location
+
+            // make a non-cached request to get the actual position
+            navigator.geolocation.getCurrentPosition(displayLocationInfo, handleLocationError);
             break;
         case 2:
             // ... device can't get data
@@ -88,7 +164,7 @@ form.addEventListener("submit", e => {
 
     const url = `http://api.openweathermap.org/data/2.5/weather?q=${inputVal}&appid=${apiKey}&units=metric`;
 
-    fetch(url)
+    cachedFetch(url)
         .then(response => response.json())
         .then(data => {
 
