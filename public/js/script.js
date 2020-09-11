@@ -142,7 +142,8 @@ function handleLocationError(error) {
         case 3:
             // ... deal with timeout
             // timeout was hit, meaning there's nothing in the cache
-            // provide default location
+            // provide default location e.g NYC
+            displayLocationInfo({ coords: { longitude: 	-73.935242, latitude: 40.730610 } });
 
             // make a non-cached request to get the actual position
             navigator.geolocation.getCurrentPosition(displayLocationInfo, handleLocationError);
@@ -202,11 +203,11 @@ form.addEventListener("submit", e => {
             mdArticleMaker(data);
         })
         .catch(() => {
-            console.log("something wrong happened")
+            msg.textContent = "Please provide a valid city";
         });
 
 
-//  msg.textContent = "";
+    msg.textContent = "";
     form.reset();
     input.focus();
 
