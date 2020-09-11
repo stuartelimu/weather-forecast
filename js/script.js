@@ -11,7 +11,23 @@ if ("serviceWorker" in navigator) {
 
 const apiKey = "86b04004cb4cf5cc52ad1ef8433155c8";
 
-console.log(window.localStorage);
+console.log(localStorage);
+
+let articlesArray = Object.values(window.localStorage);
+
+console.log(articlesArray);
+
+articlesArray.forEach(article => {
+    data = JSON.parse(article);
+    if (typeof(data === "object") && data.hasOwnProperty("weather")) {
+        mdArticleMaker(data);
+    } 
+    
+    if (typeof(data === "object") && data.hasOwnProperty("list")) {
+        lgArticleMaker(data);
+    } 
+})
+
 
 if (navigator.geolocation) {
 
@@ -95,39 +111,7 @@ function displayLocationInfo(position) {
         .then(data => {
             // do something
             console.log(data)
-            const curr = document.querySelector(".curr-cards")
-            const { list } = data;
-
-            list.forEach((element,  index) => {
-                const { weather,main, name, sys } = element;
-                const article = document.createElement("article");
-                const icon = `https://s3-us-west-2.amazonaws.com/s.cdpn.io/162656/${weather[0]["icon"]}.svg`;
-                if (index === 0) {
-                    article.classList.add("card-lg");
-                } 
-
-                article.classList.add("card-sm");
-                const markup = `
-                    <header>
-                        <h3>Monday</h3>
-                        <h3>06 Oct</h3>
-                    </header>
-                    <section>
-                        <header>
-                            <h3 data-name="${name},${sys.country}">${name}</h3>
-                            <h3>${weather[0]["description"]}</h3>
-                        </header>
-                        <figure>
-                            <figcaption>
-                                <h2>${main.temp}<sup>o</sup>C</h2>
-                            </figcaption>
-                            <img src=${icon} />
-                        </figure>
-                    </section>
-                `;
-                article.innerHTML = markup;
-                curr.appendChild(article);
-            })
+            lgArticleMaker(data);
         })
         .catch(() => {
             console.log("something wrong happened")
@@ -162,49 +146,115 @@ form.addEventListener("submit", e => {
     e.preventDefault();
     const inputVal = input.value;
 
+    const listItems = document.querySelectorAll(".card-md");
+
+    const listItemsArray = Array.from(listItems);
+    
+    if (listItemsArray.length > 0) {
+        const filteredArray = listItemsArray.filter(el => {
+            let content = "";
+            if (inputVal.includes(",")) {
+                if (inputVal.split(",")[1].length > 2) {
+                    inputVal = inputVal.split(",")[0];
+                    content = el.querySelector(".city-name").textContent.toLowerCase();
+                } else {
+                    content = el.querySelector(".city-name").dataset.name.toLowerCase();
+                }
+            } else {
+                content = el.querySelector(".city-name").textContent.toLowerCase();
+            }
+            return content == inputVal.toLowerCase();
+        });
+        
+        if (filteredArray.length > 0) {
+            console.log('already there');
+            // msg.textContent = `You already know the weather for ${
+            // filteredArray[0].querySelector(".city-name span").textContent
+            // } ...otherwise be more specific by providing the country code as well 😉`;
+            form.reset();
+            input.focus();
+            return;
+        }
+    }
+
     const url = `http://api.openweathermap.org/data/2.5/weather?q=${inputVal}&appid=${apiKey}&units=metric`;
 
     cachedFetch(url)
         .then(response => response.json())
         .then(data => {
-
-            const prev = document.querySelector(".prev-cards")
-
-            const { weather,main, name, sys } = data;
-
-            const icon = `https://s3-us-west-2.amazonaws.com/s.cdpn.io/162656/${weather[0]["icon"]}.svg`;
-
-            const article = document.createElement("article");
-            article.classList.add("card-md");
-            const markup = `
-            <header>
-                <h3 data-name="${name},${sys.country}">${name}</h3>
-                <h3>${weather[0]["description"]}</h3>
-            </header>
-                    
-            <figure>
-                <figcaption>
-                    <h2>${main.temp}<sup>o</sup>C</h2>
-                </figcaption>
-                <img src=${icon} />
-            </figure>
-
-            `;
-            article.innerHTML = markup;
-            prev.appendChild(article);
-
-            
+            mdArticleMaker(data);
         })
         .catch(() => {
             console.log("something wrong happened")
         });
 
 
-//   msg.textContent = "";
-  form.reset();
-  input.focus();
+//  msg.textContent = "";
+    form.reset();
+    input.focus();
 
 })
+
+function mdArticleMaker(data) {
+
+    const prev = document.querySelector(".prev-cards")
+
+    const { weather,main, name, sys } = data;
+
+    const icon = `https://s3-us-west-2.amazonaws.com/s.cdpn.io/162656/${weather[0]["icon"]}.svg`;
+
+    const article = document.createElement("article");
+    article.classList.add("card-md");
+    const markup = `
+    <header>
+        <h3 class="city-name" data-name="${name},${sys.country}">${name}</h3>
+        <h3>${weather[0]["description"]}</h3>
+    </header>
+            
+    <figure>
+        <figcaption>
+            <h2>${main.temp}<sup>o</sup>C</h2>
+        </figcaption>
+        <img src=${icon} />
+    </figure>
+
+    `;
+    article.innerHTML = markup;
+    prev.appendChild(article);
+}
+
+function lgArticleMaker(data) {
+
+    const curr = document.querySelector(".curr-cards")
+    const { list } = data;
+
+    list.forEach((element,  index) => {
+        const { weather,main, name, sys } = element;
+        const article = document.createElement("article");
+        const icon = `https://s3-us-west-2.amazonaws.com/s.cdpn.io/162656/${weather[0]["icon"]}.svg`;
+        if (index === 0) {
+            article.classList.add("card-lg");
+        } 
+
+        article.classList.add("card-sm");
+        const markup = `
+            <section>
+                <header>
+                    <h3 data-name="${name},${sys.country}">${name}</h3>
+                    <h3>${weather[0]["description"]}</h3>
+                </header>
+                <figure>
+                    <figcaption>
+                        <h2>${main.temp}<sup>o</sup>C</h2>
+                    </figcaption>
+                    <img src=${icon} />
+                </figure>
+            </section>
+        `;
+        article.innerHTML = markup;
+        curr.appendChild(article);
+    })
+}
 
 
 
