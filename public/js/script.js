@@ -1,3 +1,23 @@
+// toggle mobile menu
+const toggle = document.querySelector(".toggle");
+const menu = document.querySelector(".nav-list");
+
+function toggleMenu() {
+    if (menu.classList.contains("active")) {
+        menu.classList.remove("active");
+
+        // adds the menu (hamburger) icon
+        toggle.querySelector("a").innerHTML = `<i class="fas fa-bars"></i>`;
+    } else {
+        menu.classList.add("active");
+
+        // adds the close (x) icon
+        toggle.querySelector("a").innerHTML = `<i class="fas fa-times"></i>`;
+    }
+}
+
+toggle.addEventListener("click", toggleMenu, false);
+
 // register service worker
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", function() {
@@ -10,12 +30,9 @@ if ("serviceWorker" in navigator) {
   
 
 const apiKey = "86b04004cb4cf5cc52ad1ef8433155c8";
-
-console.log(localStorage);
+const msg = document.querySelector(".msg");
 
 let articlesArray = Object.values(window.localStorage);
-
-console.log(articlesArray);
 
 articlesArray.forEach(article => {
     data = JSON.parse(article);
@@ -104,7 +121,7 @@ function displayLocationInfo(position) {
     // const url = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lng}&exclude={hourly,minutely}&appid=${apiKey}&units=metric`;
     // const url = `http://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lng}&appid=${apiKey}&cnt=7&units=metric`;
 
-    const url = `http://api.openweathermap.org/data/2.5/find?lat=${lat}&lon=${lng}&cnt=7&appid=${apiKey}&units=metric`;
+    const url = `https://api.openweathermap.org/data/2.5/find?lat=${lat}&lon=${lng}&cnt=7&appid=${apiKey}&units=metric`;
 
     cachedFetch(url)
         .then(response => response.json())
@@ -177,7 +194,7 @@ form.addEventListener("submit", e => {
         }
     }
 
-    const url = `http://api.openweathermap.org/data/2.5/weather?q=${inputVal}&appid=${apiKey}&units=metric`;
+    const url = `https://api.openweathermap.org/data/2.5/weather?q=${inputVal}&appid=${apiKey}&units=metric`;
 
     cachedFetch(url)
         .then(response => response.json())
@@ -234,9 +251,10 @@ function lgArticleMaker(data) {
         const icon = `https://s3-us-west-2.amazonaws.com/s.cdpn.io/162656/${weather[0]["icon"]}.svg`;
         if (index === 0) {
             article.classList.add("card-lg");
-        } 
+        } else {
+            article.classList.add("card-sm");
+        }
 
-        article.classList.add("card-sm");
         const markup = `
             <section>
                 <header>
